@@ -1,0 +1,19 @@
+name: juanbot
+help: Connects AI to the pr review process
+version: 0.1.0
+
+commands:
+- name: review
+  alias: r
+  help: Gives a pr review and explains changes
+
+  args:
+  - name: source
+    required: true
+    help: Name of the new branch
+  - name: target
+    help: "Target baranch name (default: master)"
+
+  examples:
+  - juanbot review ACC-224
+  - juanbot review ACC-224 dev
