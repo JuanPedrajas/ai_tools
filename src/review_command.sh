@@ -1,9 +1,3 @@
-echo "# This file is located at 'src/review_command.sh'."
-echo "# It contains the implementation for the 'juanbot review' command."
-echo "# The code you write here will be wrapped by a function named 'juanbot_review_command()'."
-echo "# Feel free to edit this file; your changes will persist when regenerating."
-inspect_args
-
 # Shows a loading message while a command runs.
 # Usage: run_with_loading "Your message here" command arg1 arg2 ...
 run_with_loading() {
@@ -11,7 +5,7 @@ run_with_loading() {
     shift
     local command=("$@")
 
-    echo "[.] $message" >&2
+    echo "[-] $message" >&2
     # Execute command, capturing stdout, while allowing stderr to pass through.
     output=$("${command[@]}")
     local exit_code=$?
@@ -24,6 +18,18 @@ run_with_loading() {
 
     echo "$output"
     return 0
+}
+
+# A function to sleep for a specified number of seconds while showing a loading animation.
+# Usage: sleep_with_loading <seconds>
+sleep_with_loading() {
+  local duration=$1
+  echo -n "Loading " >&2
+  for (( i=0; i<duration; i++ )); do
+    echo -n "." >&2
+    sleep 1
+  done
+  echo "" # Move to the next line after finishing
 }
 
 # Gets the diff from a target branch.
@@ -39,6 +45,7 @@ get_diff() {
 get_explanation_from_gemini() {
     local diff_content
     diff_content=$(cat) # Read from stdin
+    sleep_with_loading 5
     gemini -p "Explain the following diff: $diff_content"
 }
 
@@ -62,6 +69,11 @@ $explanation
 EOF
 }
 
+generate_pr_review() {
+    local prompt=$(echo $1)
+    sleep_with_loading 5
+    gemini -p "$prompt"
+}
 
 # Example: ./review_pr.sh my-feature-branch
 # Compares my-feature-branch against master.
@@ -80,5 +92,11 @@ if [ $? -ne 0 ]; then exit 1; fi
 local review_prompt
 review_prompt=$(generate_review_prompt "$changes" "$explanation_of_pr")
 
-echo "$review_prompt"
+pr_review=$(run_with_loading "Exploring code and being critic..." generate_pr_review "$review_prompt")
+if [ $? -ne 0 ]; then exit 1; fi
+
+echo "# Explained PR:"
+echo "$explanation_of_pr"
+echo "# The review:"
+echo "$pr_review"
 
