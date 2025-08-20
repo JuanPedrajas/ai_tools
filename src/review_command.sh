@@ -44,9 +44,13 @@ get_diff() {
 # The diff content is piped into this function.
 get_explanation_from_gemini() {
     local diff_content
-    diff_content=$(cat) # Read from stdin
+    local tmp_filename
+    diff_content="$(cat)" # Read from stdin
+    tmp_filename="$(pwd)/.$(cat /dev/random | head -c 5 | base64)"
+    echo $diff_content > $tmp_filename
     sleep_with_loading 5
-    gemini -p "Explain the following diff: $diff_content"
+    gemini -p "Explain the following diff: $tmp_filename"
+    rm $tmp_filename
 }
 
 # Generates the final review prompt.
@@ -71,8 +75,11 @@ EOF
 
 generate_pr_review() {
     local prompt=$(echo $1)
+    local tmp_filename="$(pwd)/.$(cat /dev/random | head -c 5 | base64)"
+    echo $prompt > $tmp_filename
     sleep_with_loading 5
-    gemini -p "$prompt"
+    gemini -p "Run the prompt in this file: @$tmp_filename"
+    rm $tmp_filename
 }
 
 # Example: ./review_pr.sh my-feature-branch
